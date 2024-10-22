@@ -26,7 +26,7 @@
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
 ## Documentation
-- [Swagger](https://job-board-vn66.onrender.com/api-docs)
+- https://job-board-vn66.onrender.com/api-docs
 
 
 ## Installation
