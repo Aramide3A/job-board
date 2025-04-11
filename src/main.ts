@@ -3,8 +3,8 @@ import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 import { ValidationPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { JwtAuthGuard } from './auth/auth.guard';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { JwtAuthGuard } from './auth/guard/jwt.guard';
 
 async function bootstrap() {
   dotenv.config()
@@ -20,6 +20,6 @@ async function bootstrap() {
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, documentFactory);
   
-  await app.listen(3000);
+  await app.listen(3001);
 }
 bootstrap();

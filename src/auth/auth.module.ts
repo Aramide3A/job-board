@@ -6,6 +6,7 @@ import { jwtConstraints } from './constraints';
 import { JwtStrategy } from './strategy/jwt_strategy';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './guard/jwt.guard';
+import { LocalStrategy } from './strategy/local.strategy';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { JwtAuthGuard } from './guard/jwt.guard';
   providers: [
     AuthService,
     JwtStrategy,
+    LocalStrategy,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

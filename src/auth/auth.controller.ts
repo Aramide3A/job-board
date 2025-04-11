@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Param, Post, Request, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import {
   RecruiterSignupDto,
@@ -6,6 +6,7 @@ import {
   UserSignupDto,
 } from './dto/auth.dto';
 import { Public } from './decorator/public.decorator';
+import { LocalAuthGuard } from './guard/local.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -18,14 +19,15 @@ export class AuthController {
   }
 
   @Public()
-  @Post('signup/user')
-  signUpRecruiter(@Body() body: RecruiterSignupDto) {
-    return this.authservice.recruiterSignUp(body);
+  @Post('signup/recruiter/:companyId')
+  signUpRecruiter(@Body() body: RecruiterSignupDto, @Param() companyId) {
+    return this.authservice.recruiterSignUp(body,companyId);
   }
 
   @Public()
+  @UseGuards(LocalAuthGuard)
   @Post('login')
-  loginInUSer(@Body() body: UserSigninDto) {
-    return this.authservice.login(body);
+  loginInUSer(@Request() req) {
+    return this.authservice.login(req.user);
   }
 }

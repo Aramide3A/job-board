@@ -30,7 +30,7 @@ export class AuthService {
       if (findUser) throw new BadRequestException('User already exists');
 
       const hashPassword = await bcrypt.hash(password, 10);
-      const user = await this.prisma.user.create({
+      const createUser = await this.prisma.user.create({
         data: {
           email,
           name,
@@ -38,7 +38,15 @@ export class AuthService {
         },
       });
 
-      const payload = { sub: user.id, email: user.email, role: user.role };
+      const createProfile = await this.prisma.profile.create({
+        data: { user: { connect: { id: createUser.id } } },
+      });
+
+      const payload = {
+        sub: createUser.id,
+        email: createUser.email,
+        role: createUser.role,
+      };
 
       const token = await this.jwtService.signAsync(payload);
       return { accessToken: token };
@@ -47,9 +55,9 @@ export class AuthService {
     }
   }
 
-  async recruiterSignUp(body: RecruiterSignupDto) {
+  async recruiterSignUp(body: RecruiterSignupDto, companyId) {
     try {
-      const { email, name, password, companyId } = body;
+      const { email, name, password } = body;
       const hashPassword = await bcrypt.hash(password, 10);
       const user = await this.prisma.user.create({
         data: {
@@ -70,7 +78,7 @@ export class AuthService {
     }
   }
 
-  async login(body: UserSigninDto) {
+  async validateUser(body: { username: string; password: string }) {
     try {
       const { username, password } = body;
       const user = await this.prisma.user.findUnique({
@@ -80,7 +88,14 @@ export class AuthService {
       const comparePassword = await bcrypt.compare(password, user.password);
       if (!comparePassword)
         throw new BadRequestException('Invalid Credentials');
+      return user;
+    } catch (error) {
+      throw new BadRequestException('Error validating user');
+    }
+  }
 
+  async login(user) {
+    try {
       const payload = { sub: user.id, email: user.email, role: user.role };
 
       const token = await this.jwtService.signAsync(payload);
