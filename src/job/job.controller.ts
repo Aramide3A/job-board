@@ -16,7 +16,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { JobService } from './job.service';
 import { ListingDto } from './dto/createListing.dto';
 import { updateListingDto } from './dto/updateListing.dto';
-import { Roles } from 'src/auth/roles.decorator';
+import { Roles } from 'src/auth/decorator/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/auth.guard';
 
 @Controller('job')

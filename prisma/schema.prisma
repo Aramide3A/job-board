@@ -13,58 +13,85 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User{
-  id      String   @id @default(auto()) @map("_id") @db.ObjectId
-  email   String   @unique
-  name    String
-  hashPassword String
-  phone  String?
-  resume  String?
+model User {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  email           String        @unique
+  name            String
+  password        String
+  role            Role          @default(USER)
+  profile         Profile?
+  company         Company[]
+  jobs            Job[]
+  applications    Application[]
+}
+
+model Profile {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @unique @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id])
+  phone           String?
+  bio             String
+  resume          String?
   profile_picture String?
-  location  String?
-  work_experience String?
-  role Role @default(User)
-  jobs Job[]
-  applications Application[]
+  skills          String[]
 }
 
 enum Role {
-  User 
-  Admin
+  ADMIN
+  RECRUITER
+  USER
+}
+
+model Company {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String
+  logo        String?
+  location    String
+  createdAt   DateTime @default(now())
+  createdBy   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String   @db.ObjectId
+  job         Job[]
 }
 
 model Job {
-  id String   @id @default(auto()) @map("_id") @db.ObjectId
-  user User @relation(fields: [userId],references: [id])
-  userId String @db.ObjectId
-  title String
-  company_name String
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
   description String?
-  location String
-  type Type
-  salary Int
-  deadline DateTime
-  isAvailable Boolean @default(true)
+  location    String
+  jobType     Type
+  tags        String[]
+  requirement String
+  salaryRange String
+  isOpen      Boolean  @default(true)
+
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId    String        @db.ObjectId
+  createdBy    User          @relation(fields: [userId], references: [id])
+  userId       String        @db.ObjectId
   applications Application[]
 }
 
-enum Type{
-  Fulltime
-  Parttime
-  Contract
+enum Type {
+  ONSITE
+  REMOTE
+  HYBRID
 }
 
 model Application {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+  id           String @id @default(auto()) @map("_id") @db.ObjectId
+  resume       String
+  cover_letter String
+  status       Status @default(PENDING)
 
-  user User @relation(fields: [userId],references: [id])
-  userId String @db.ObjectId
+  applicant   User   @relation(fields: [applicantId], references: [id])
+  applicantId String @db.ObjectId
+  job         Job    @relation(fields: [jobId], references: [id])
+  jobId       String @db.ObjectId
+}
 
-  job Job @relation(fields: [jobId], references: [id])
-  jobId String @db.ObjectId
-
-  name String
-  jobTitle String
-
-  accepted Boolean
+enum Status {
+  PENDING
+  ACCEPTED
+  REJCETED
 }

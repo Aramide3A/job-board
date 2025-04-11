@@ -10,7 +10,7 @@ export class UserService {
     const getProfile = await this.prisma.user.findUnique({
       where: { id },
     });
-    delete getProfile.hashPassword
+    delete getProfile.password
     return getProfile;
   }
 
@@ -18,7 +18,7 @@ export class UserService {
     const {email,name,phone,resume,profile_picture,location,work_experience} = dto;
     const updateProfile = await this.prisma.user.update({
       where: { id },
-      data: { email,name,phone,resume,profile_picture,location,work_experience },
+      data: { email,name,resume,profile_picture,location,work_experience },
     });
     return updateProfile
   }
