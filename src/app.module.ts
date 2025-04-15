@@ -9,9 +9,10 @@ import { UserModule } from './user/user.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 // import { ApplicationModule } from './application/application.module';
 import { JwtAuthGuard } from './auth/guard/jwt.guard';
+import { CompanyModule } from './company/company.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, UserModule, CloudinaryModule],
+  imports: [AuthModule, PrismaModule, UserModule, CloudinaryModule, CompanyModule],
   controllers: [],
   providers: [
     JwtAuthGuard,

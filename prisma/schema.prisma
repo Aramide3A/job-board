@@ -14,15 +14,15 @@ datasource db {
 }
 
 model User {
-  id              String        @id @default(auto()) @map("_id") @db.ObjectId
-  email           String        @unique
-  name            String
-  password        String
-  role            Role          @default(USER)
-  profile         Profile?
-  company         Company[]
-  jobs            Job[]
-  applications    Application[]
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  email        String        @unique
+  name         String
+  password     String
+  role         Role          @default(USER)
+  profile      Profile?
+  company      Company[]
+  jobs         Job[]
+  applications Application[]
 }
 
 model Profile {
@@ -44,14 +44,15 @@ enum Role {
 
 model Company {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
+  name        String   @unique
   description String
+  companyId   String   @unique
   logo        String?
   location    String
   createdAt   DateTime @default(now())
   createdBy   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String   @db.ObjectId
-  job         Job[]
+  jobs        Job[]
 }
 
 model Job {

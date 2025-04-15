@@ -29,7 +29,7 @@ export class UserController {
   @Put('update')
   @UseInterceptors(
     FileFieldsInterceptor([
-      { name: 'profilePicture', maxCount: 1 },
+      { name: 'profile_picture', maxCount: 1 },
       { name: 'resume', maxCount: 1 },
     ]),
   )
@@ -38,7 +38,7 @@ export class UserController {
     @Body() dto: any,
     @UploadedFiles()
     files: {
-      profilePicture?: Express.Multer.File[];
+      profile_picture?: Express.Multer.File[];
       resume?: Express.Multer.File[];
     },
   ) {

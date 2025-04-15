@@ -30,22 +30,41 @@ export class UserService {
 
   async updateUserProfile(id: any, body: ProfileDto, files) {
     try {
+      const getProfile = await this.prisma.profile.findUnique({
+        where: {userId : id}
+      })
+
+      if(!getProfile) throw new NotFoundException("Profile doesnt exist")
+
       const { phone, bio, skills } = body;
 
-      const uploadProfilePicture = await this.cloudinary.uploadImage(
-        files.profilePicture,
-      );
-      let profile_picture = uploadProfilePicture.secure_url;
+      let profile_picture: string | undefined;
+      let resume: string | undefined;
 
-      const uploadResume = await this.cloudinary.uploadImage(files.resume);
-      let resume = uploadResume.secure_url;
+      if (files?.profile_picture?.[0]) {
+        const uploadProfilePicture = await this.cloudinary.uploadImage(
+          files.profile_picture[0],
+        );
+        profile_picture = uploadProfilePicture.secure_url;
+      }
+
+      if (files?.resume?.length) {
+        const uploadResume = await this.cloudinary.uploadImage(files.resume);
+        resume = uploadResume.secure_url;
+      }
+      const updateProfileDate: any = { phone, bio, skills };
+
+      if (resume) updateProfileDate.resume = resume;
+      if (profile_picture) updateProfileDate.profile_picture = profile_picture;
 
       const updateProfile = await this.prisma.profile.update({
-        where: { id },
-        data: { phone, bio, resume, skills, profile_picture },
-      });
+        where: { userId: id },
+        data: updateProfileDate,
+      }); 
+
       return updateProfile;
     } catch (error) {
+      console.log(error);
       throw new BadRequestException('Error updating user profile');
     }
   }
