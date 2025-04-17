@@ -39,6 +39,9 @@ export class CompanyService {
 
       if (!getUser) throw new NotFoundException('User does not exist');
 
+      if (getUser.companyId)
+        throw new BadRequestException('User already has a company');
+
       let companyId = uuid().slice(0, 5);
       while (0 < 1) {
         const checkCompanyId = await this.prisma.company.findUnique({
@@ -53,7 +56,6 @@ export class CompanyService {
         description,
         companyId,
         location,
-        createdBy: { connect: { id: getUser.id } },
       };
 
       if (logo) {
@@ -63,6 +65,11 @@ export class CompanyService {
 
       const createCompany = await this.prisma.company.create({
         data: createCompanyData,
+      });
+
+      await this.prisma.user.update({
+        where: { id: getUser.id },
+        data: { companyId: createCompany.id },
       });
 
       if (getUser.role === Role.USER) {
@@ -114,7 +121,7 @@ export class CompanyService {
         throw new NotFoundException('Company not found');
       }
 
-      const isOwner = user.id === existingCompany.userId;
+      const isOwner = user.companyId === existingCompany.id;
       if (!isOwner && user.role !== Role.ADMIN) {
         throw new UnauthorizedException(
           'You are not allowed to update this company',
@@ -149,7 +156,7 @@ export class CompanyService {
       if (!existingCompany) {
         throw new NotFoundException('Company not found');
       }
-      const isOwner = user.id === existingCompany.userId;
+      const isOwner = user.companyId === existingCompany.id;
       if (!isOwner && user.role !== Role.ADMIN) {
         throw new UnauthorizedException(
           'You are not allowed to update this company',

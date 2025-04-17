@@ -64,7 +64,7 @@ export class AuthService {
           email,
           name,
           password: hashPassword,
-          company: { connect: { id: companyId } },
+          companyId,
           role: Role.RECRUITER,
         },
       });

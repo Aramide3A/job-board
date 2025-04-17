@@ -1,95 +1,207 @@
-// import { Injectable } from '@nestjs/common';
-// import { PrismaService } from 'src/prisma/prisma.service';
-// import { ListingDto } from './dto/createListing.dto';
-// import { Type } from '@prisma/client';
-// import { updateListingDto } from './dto/updateListing.dto';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { JobType, Role } from '@prisma/client';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateJobDto } from './dto/createJob.dto';
+import { updateJobDto } from './dto/updateJob.dto';
 
-// @Injectable()
-// export class JobService {
-//   constructor(private prisma: PrismaService) {}
+@Injectable()
+export class JobService {
+  constructor(private prisma: PrismaService) {}
 
-//   async getListing(type?,location?) {
-//     const filter:any = {}
-//     if(type) filter.type = type
+  async findall(jobType?, location?) {
+    try {
+      const filter: any = {};
+      if (jobType) filter.jobType = JobType;
+      filter.isOpen = true;
+      const getJobs = await this.prisma.job.findMany({
+        where: filter,
+      });
+      return getJobs;
+    } catch (error) {
+      throw new BadRequestException('Error getting all available jobs');
+    }
+  }
 
-//     if(location) filter.location = location
-//     const listing = await this.prisma.job.findMany({
-//       where : filter
-//     });
-//     return listing;
-//   }
+  async getAllCompanyListing(companyId: string, type?) {
+    try {
+      const filter: any = {};
+      if (type) filter.type = type;
 
-//   async getAllListing(userId:any,type?,location?) {
-//     const filter:any = {}
-//     if(type) filter.type = type
+      filter.companyId = companyId;
+      const listing = await this.prisma.job.findMany({
+        where: filter,
+      });
+      if (!listing) throw new NotFoundException('No jobs found for comapny');
+      return listing;
+    } catch (error) {
+      console.error(error);
+      throw new BadRequestException(
+        'Error getting all available jobs for a particular company',
+      );
+    }
+  }
 
-//     if(location) filter.location = location
-//     filter.userId = userId
-//     const listing = await this.prisma.job.findMany({
-//       where : filter
-//     });
-//     return listing;
-//   }
+  async getAJobListing(id: any) {
+    try {
+      const jobListing = await this.prisma.job.findUnique({
+        where: { id },
+      });
+      return jobListing;
+    } catch (error) {
+      throw new BadRequestException('Error getting a particular job listing');
+    }
+  }
 
-//   async getJobApplication(jobId, userId) {
-//     const application = await this.prisma.application.findMany({
-//       where : {jobId, userId}
-//     });
-//     return application;
-//   }
+  async CreateJobListing(dto: CreateJobDto, companyId, user) {
+    const findCompany = await this.prisma.company.findUnique({
+      where: { id: companyId },
+    });
+    if (!findCompany) throw new NotFoundException('Company does not exist');
 
-//   async getAJob(id: any) {
-//     const listing = await this.prisma.job.findUnique({
-//         where: {id}
-//     });
-//     return listing;
-//   }
+    let userId = user.id;
+    const getUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    const isRecruiter = getUser.companyId === findCompany.id;
+    if (!isRecruiter)
+      throw new UnauthorizedException(
+        'You are not authorized to create this job listing under this company',
+      );
 
-//   async CreateJobListing(dto: ListingDto, id){
-//     const {title, company_name, description, location, type, salary, deadline} = dto
-//     const jobType = Type[type]
-//     const newListing = await this.prisma.job.create({
-//         data : {
-//           user: {
-//             connect: { id }
-//           },title, company_name, description, location,type:jobType, salary, deadline
-//     }})
-//     return newListing
-//   }
+    try {
+      const {
+        title,
+        requirement,
+        description,
+        location,
+        jobType,
+        tags,
+        salaryRange,
+      } = dto;
+      const newJob = await this.prisma.job.create({
+        data: {
+          title,
+          requirement,
+          description,
+          location,
+          jobType,
+          tags,
+          salaryRange,
+          company: {
+            connect: { id: companyId },
+          },
+          createdBy: {
+            connect: { id: getUser.id },
+          },
+        },
+      });
+      return newJob;
+    } catch (error) {
+      console.error(error);
+      throw new BadRequestException('Error creating a job');
+    }
+  }
 
-//   async updateJobListing(dto:updateListingDto , id) {
-//     const { title, company_name, description, location, type, salary, deadline } = dto;
-//     const jobType = Type[type]
-//     const updateListing = await this.prisma.job.update({
-//       where: { id },
-//       data: {
-//         title,
-//         company_name,
-//         description,
-//         location,
-//         type: jobType,
-//         salary,
-//         deadline,
-//       },
-//     });
-  
-//     return updateListing;
-//   }  
+  async updateJobListing(dto: updateJobDto, jobId, user) {
+    try {
+      const findJob = await this.prisma.job.findUnique({
+        where: { id: jobId },
+      });
+      if (!findJob) throw new NotFoundException('Job listing doesnt exist');
 
-//   async deactivateJobListing(id) {
-//     const updateListing = await this.prisma.job.update({
-//       where: { id },
-//       data: {
-//         isAvailable : false
-//       },
-//     });
-//     return updateListing;
-//   }  
+      const getCompany = await this.prisma.company.findFirst({
+        where: { id: findJob.companyId },
+      });
+      if (!getCompany) throw new NotFoundException('Compant does not exist');
 
-//   async deleteJobListing(id){
-//     const deleteListing = await this.prisma.job.delete({
-//       where : {id}
-//     })
-//     return "deleted successfully"
-//   }
-// }
+      let userId = user.id;
+      const getUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+      if (!getUser) throw new NotFoundException('User does not exist');
+
+      const isOwner = getUser.companyId === getCompany.id;
+      const isAdmin = getUser.role === Role.ADMIN;
+      if (!isOwner && !isAdmin)
+        throw new UnauthorizedException(
+          'You are not authorizedto update this  lsiting',
+        );
+
+      const updateJobData = { ...dto };
+      dto;
+      const updateListing = await this.prisma.job.update({
+        where: { id: jobId },
+        data: updateJobData,
+      });
+
+      return updateListing;
+    } catch (error) {
+      throw new BadRequestException('Error updating job listing');
+    }
+  }
+
+  async deactivateJobListing(jobId, user) {
+    try {
+      const findJob = await this.prisma.job.findUnique({
+        where: { id: jobId },
+      });
+      if (!findJob) throw new NotFoundException('Job listing doesnt exist');
+
+      let userId = user.id;
+      const getUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+      if (!getUser) throw new NotFoundException('User does not exist');
+
+      const isOwner = getUser.companyId === findJob.companyId;
+      const isAdmin = getUser.role === Role.ADMIN;
+      if (!isOwner && !isAdmin)
+        throw new UnauthorizedException(
+          'You are not authorizedto update this  lsiting',
+        );
+
+      const updateListing = await this.prisma.job.update({
+        where: { id: jobId },
+        data: {
+          isOpen: false,
+        },
+      });
+      return updateListing;
+    } catch (error) {
+      throw new BadRequestException('Error deactivating job listing');
+    }
+  }
+
+  async deleteJobListing(jobId, user) {
+    try {
+      const findJob = await this.prisma.job.findUnique({
+        where: { id: jobId },
+      });
+      if (!findJob) throw new NotFoundException('Job listing doesnt exist');
+
+      let userId = user.id;
+      const getUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+      if (!getUser) throw new NotFoundException('User does not exist');
+
+      const isOwner = getUser.companyId === findJob.companyId;
+      const isAdmin = getUser.role === Role.ADMIN;
+      if (!isOwner && !isAdmin)
+        throw new UnauthorizedException(
+          'You are not authorizedto update this  lsiting',
+        );
+      const deleteListing = await this.prisma.job.delete({
+        where: { id: jobId },
+      });
+      return 'deleted successfully';
+    } catch (error) {
+      throw new BadRequestException('Error deleting job listing');
+    }
+  }
+}

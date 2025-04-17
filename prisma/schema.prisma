@@ -20,9 +20,11 @@ model User {
   password     String
   role         Role          @default(USER)
   profile      Profile?
-  company      Company[]
+  // company      Company[]     @relation(name: "company creation user")
   jobs         Job[]
   applications Application[]
+  Company      Company?      @relation(fields: [companyId], references: [id])
+  companyId    String?       @db.ObjectId
 }
 
 model Profile {
@@ -50,9 +52,11 @@ model Company {
   logo        String?
   location    String
   createdAt   DateTime @default(now())
-  createdBy   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String   @db.ObjectId
-  jobs        Job[]
+  // createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade, name: "company creation user")
+  // createdById String   @db.ObjectId
+
+  Recruiters User[]
+  jobs       Job[]
 }
 
 model Job {
@@ -60,7 +64,7 @@ model Job {
   title       String
   description String?
   location    String
-  jobType     Type
+  jobType     JobType
   tags        String[]
   requirement String
   salaryRange String
@@ -73,7 +77,7 @@ model Job {
   applications Application[]
 }
 
-enum Type {
+enum JobType {
   ONSITE
   REMOTE
   HYBRID
