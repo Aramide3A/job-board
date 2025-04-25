@@ -33,7 +33,6 @@ export class JobController {
   }
 
   @Get('company/:companyId')
-  @Roles(['RECRUITER'])
   getAllCompanyJobListing(@Param('companyId') companyId, @Query('type') type?: String) {
     return this.jobService.getAllCompanyListing(companyId, type);
   }

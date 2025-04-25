@@ -1,57 +1,160 @@
-// import { BadRequestException, Injectable } from '@nestjs/common';
-// import { PrismaService } from 'src/prisma/prisma.service';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Status } from '@prisma/client';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 
-// @Injectable()
-// export class ApplicationService {
-//     constructor(private prisma:PrismaService){}
+@Injectable()
+export class ApplicationService {
+  constructor(
+    private prisma: PrismaService,
+    private cloudindary: CloudinaryService,
+  ) {}
 
-//     async newApplication(jobId,userId){
-//         const findUser = await this.prisma.user.findUnique({where: {id: userId}})
-//         const findJob = await this.prisma.job.findUnique({where: {id : jobId}})
-//         const findApplication = await this.prisma.application.findFirst({where:{
-//             userId,
-//             jobId
-//         }})
-//         if (findApplication) {
-//             throw new BadRequestException('Application already exists');
-//         }
-//         const createApplication = await  this.prisma.application.create({
-//             data : {
-//                 user: {
-//                     connect: { id: userId }
-//                 },
-//                 job: {
-//                     connect: { id: jobId }
-//                 },
-//                 name : findUser.name,
-//                 jobTitle : findJob.title,
-//                 accepted : null,
-//             }
-//         })
-//         return {"msg": `Application for ${findJob.title} role successful `}
-//     }
+  async getOneApplication(applicationId) {
+    try {
+      const findApplication = await this.prisma.application.findUnique({
+        where: { id: applicationId },
+      });
+      if (!findApplication) throw new NotFoundException('User not found');
+      return { findApplication };
+    } catch (error) {
+      throw new BadRequestException('Error getting One application');
+    }
+  }
 
-//     async rejectApplication(applicationId,userId){
-//         const updateApplication = await  this.prisma.application.update({
-//             where : {
-//                 id: applicationId
-//             },
-//             data : {
-//                 accepted : false,
-//             }
-//         })
-//         return {"msg": `Application rejected successfully `}
-//     }
+  async getAllUserApplication(user) {
+    try {
+      const findUser = await this.prisma.user.findUnique({
+        where: { id: user.id },
+      });
+      if (!findUser) throw new NotFoundException('User not found');
 
-//     async acceptApplication(applicationId,userId){
-//         const updateApplication = await  this.prisma.application.update({
-//             where : {
-//                 id: applicationId
-//             },
-//             data : {
-//                 accepted : true,
-//             }
-//         })
-//         return {"msg": `Application accepted successfully `}
-//     }
-// }
+      const findAllApplications = await this.prisma.application.findMany({
+        where: { applicantId: user.id },
+      });
+      if (!findAllApplications) throw new NotFoundException('User not found');
+      return { findAllApplications };
+    } catch (error) {
+      throw new BadRequestException("Error getting user's applications");
+    }
+  }
+
+  async getAllCompanyApplication(companyId) {
+    try {
+      const findCompany = await this.prisma.company.findUnique({
+        where: { id: companyId },
+      });
+      if (!findCompany) throw new NotFoundException('company does not exist');
+
+      const findCompanypplications = await this.prisma.application.findMany({
+        where: { job: { companyId } },
+      });
+      if (!findCompanypplications)
+        throw new NotFoundException('No company applications found');
+      return { findCompanypplications };
+    } catch (error) {
+      throw new BadRequestException("Error getting company's applications");
+    }
+  }
+
+  async createApplication(jobId, userId, files) {
+    try {
+      const findUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { profile: true },
+      });
+      if (!findUser) throw new NotFoundException('User not found');
+
+      const findJob = await this.prisma.job.findUnique({
+        where: { id: jobId },
+      });
+      if (!findJob)
+        throw new NotFoundException(`Job with id ${jobId} not found`);
+
+      const findApplication = await this.prisma.application.findFirst({
+        where: { AND: [{ applicantId: findUser.id }, { jobId: findJob.id }] },
+      });
+      if (findApplication) {
+        throw new BadRequestException('Application already exists');
+      }
+
+      let resume: string | undefined;
+      let cover_letter: string | undefined;
+
+      if (files?.resume?.length) {
+        const uploadResume = await this.cloudindary.uploadImage(files.resume);
+        resume = uploadResume.secure_url;
+      } else {
+        resume = findUser.profile.resume;
+      }
+
+      if (files?.cover_letter?.length) {
+        const uploadCoverLetter = await this.cloudindary.uploadImage(
+          files.resume,
+        );
+        cover_letter = uploadCoverLetter.secure_url;
+      } else {
+        cover_letter = findUser.profile.cover_letter;
+      }
+
+      const createApplicationData: any = {
+        applicant: {
+          connect: { id: userId },
+        },
+        job: {
+          connect: { id: jobId },
+        },
+        resume,
+        cover_letter,
+      };
+
+      await this.prisma.application.create({
+        data: createApplicationData,
+      });
+      
+      return {
+        msg: `Application for ${findJob.title} submitted successfully `,
+      };
+    } catch (error) {
+      throw new BadRequestException('Error creating application');
+    }
+  }
+
+  async acceptApplication(applicationId) {
+    try {
+      const { findApplication } = await this.getOneApplication(applicationId);
+      await this.prisma.application.update({
+        where: {
+          id: findApplication.id,
+        },
+        data: {
+          status: Status.ACCEPTED,
+        },
+      });
+      return { msg: `Application accepted successfully` };
+    } catch (error) {
+      throw new BadRequestException('Error accepting application');
+    }
+  }
+
+  async rejectApplication(applicationId) {
+    try {
+      const { findApplication } = await this.getOneApplication(applicationId);
+      const updateApplication = await this.prisma.application.update({
+        where: {
+          id: findApplication.id,
+        },
+        data: {
+          status: Status.REJCETED,
+        },
+      });
+      return { msg: `Application rejected successfully ` };
+    } catch (error) {
+      throw new BadRequestException('Error rejecting application');
+    }
+  }
+}

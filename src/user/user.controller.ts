@@ -40,6 +40,7 @@ export class UserController {
     files: {
       profile_picture?: Express.Multer.File[];
       resume?: Express.Multer.File[];
+      cover_letter?: Express.Multer.File[];
     },
   ) {
     return this.userService.updateUserProfile(req.user.id, dto, files);

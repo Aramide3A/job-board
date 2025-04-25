@@ -34,6 +34,7 @@ model Profile {
   phone           String?
   bio             String?
   resume          String?
+  cover_letter    String?
   profile_picture String?
   skills          String[]
 }

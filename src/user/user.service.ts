@@ -40,6 +40,7 @@ export class UserService {
 
       let profile_picture: string | undefined;
       let resume: string | undefined;
+      let cover_letter: string | undefined;
 
       if (files?.profile_picture?.[0]) {
         const uploadProfilePicture = await this.cloudinary.uploadImage(
@@ -52,10 +53,17 @@ export class UserService {
         const uploadResume = await this.cloudinary.uploadImage(files.resume);
         resume = uploadResume.secure_url;
       }
+
+      if (files?.cover_letter?.length) {
+        const uploadCoverLetter = await this.cloudinary.uploadImage(files.cover_letter);
+        cover_letter = uploadCoverLetter.secure_url;
+      }
+
       const updateProfileDate: any = { phone, bio, skills };
 
       if (resume) updateProfileDate.resume = resume;
       if (profile_picture) updateProfileDate.profile_picture = profile_picture;
+      if (cover_letter) updateProfileDate.cover_letter = cover_letter;
 
       const updateProfile = await this.prisma.profile.update({
         where: { userId: id },
