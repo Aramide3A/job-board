@@ -31,10 +31,10 @@ export class UserService {
   async updateUserProfile(id: any, body: ProfileDto, files) {
     try {
       const getProfile = await this.prisma.profile.findUnique({
-        where: {userId : id}
-      })
+        where: { userId: id },
+      });
 
-      if(!getProfile) throw new NotFoundException("Profile doesnt exist")
+      if (!getProfile) throw new NotFoundException('Profile doesnt exist');
 
       const { phone, bio, skills } = body;
 
@@ -55,7 +55,9 @@ export class UserService {
       }
 
       if (files?.cover_letter?.length) {
-        const uploadCoverLetter = await this.cloudinary.uploadImage(files.cover_letter);
+        const uploadCoverLetter = await this.cloudinary.uploadImage(
+          files.cover_letter,
+        );
         cover_letter = uploadCoverLetter.secure_url;
       }
 
@@ -68,7 +70,7 @@ export class UserService {
       const updateProfile = await this.prisma.profile.update({
         where: { userId: id },
         data: updateProfileDate,
-      }); 
+      });
 
       return updateProfile;
     } catch (error) {

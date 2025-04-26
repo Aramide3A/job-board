@@ -61,8 +61,9 @@ export class ApplicationService {
     }
   }
 
-  async createApplication(jobId, userId, files) {
+  async createApplication(jobId, user, files) {
     try {
+      let userId = user.id;
       const findUser = await this.prisma.user.findUnique({
         where: { id: userId },
         include: { profile: true },
@@ -86,7 +87,9 @@ export class ApplicationService {
       let cover_letter: string | undefined;
 
       if (files?.resume?.length) {
-        const uploadResume = await this.cloudindary.uploadImage(files.resume);
+        const uploadResume = await this.cloudindary.uploadImage(
+          files.resume[0],
+        );
         resume = uploadResume.secure_url;
       } else {
         resume = findUser.profile.resume;
@@ -94,7 +97,7 @@ export class ApplicationService {
 
       if (files?.cover_letter?.length) {
         const uploadCoverLetter = await this.cloudindary.uploadImage(
-          files.resume,
+          files.cover_letter[0],
         );
         cover_letter = uploadCoverLetter.secure_url;
       } else {
@@ -115,7 +118,7 @@ export class ApplicationService {
       await this.prisma.application.create({
         data: createApplicationData,
       });
-      
+
       return {
         msg: `Application for ${findJob.title} submitted successfully `,
       };

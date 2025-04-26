@@ -30,7 +30,7 @@ export class ApplicationController {
     return this.applicationService.getOneApplication(applicationId);
   }
 
-  @Roles(['ADMIN',"RECRUITER"])
+  @Roles(['ADMIN', 'RECRUITER'])
   @Get('company/:companyId')
   getAllCompanyApplications(@Param('companyId') companyId) {
     return this.applicationService.getAllCompanyApplication(companyId);
@@ -43,24 +43,27 @@ export class ApplicationController {
       { name: 'cover_letter', maxCount: 1 },
     ]),
   )
-  createapplication(@Param('jobId') jobId, @Request() req, @UploadedFiles() files: {resume?: Express.Multer.File[], cover_letter? : Express.Multer.File[]}) {
-    return this.applicationService.createApplication(
-      jobId,
-      req.user.id,
-      files
-    );
+  createapplication(
+    @Param('jobId') jobId,
+    @Request() req,
+    @UploadedFiles()
+    files: {
+      resume?: Express.Multer.File[];
+      cover_letter?: Express.Multer.File[];
+    },
+  ) {
+    return this.applicationService.createApplication(jobId, req.user, files);
   }
 
-  @Roles(['ADMIN',"RECRUITER"])
+  @Roles(['ADMIN', 'RECRUITER'])
   @Put(':applicationId/accept')
   acceptApplication(@Param('applicationId') applicationId) {
     return this.applicationService.acceptApplication(applicationId);
   }
 
-  @Roles(['ADMIN',"RECRUITER"])
+  @Roles(['ADMIN', 'RECRUITER'])
   @Put(':applicationId/reject')
   rejectApplication(@Param('applicationId') applicationId) {
-    return this.applicationService.rejectApplication(applicationId,);
+    return this.applicationService.rejectApplication(applicationId);
   }
-
 }
